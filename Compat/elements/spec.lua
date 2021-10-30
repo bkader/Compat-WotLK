@@ -118,3 +118,16 @@ end
 function Compat.UnitHasGlyph(unit, glyphID)
 	return LGT:UnitHasGlyph(unit, glyphID)
 end
+
+
+-- functions that simply replaced other api functions
+local GetNumTalentTabs = GetNumTalentTabs
+local GetNumTalentGroups = GetNumTalentGroups
+local GetUnspentTalentPoints = GetUnspentTalentPoints
+local SetActiveTalentGroup = SetActiveTalentGroup
+
+Compat.GetNumSpecializations = GetNumTalentTabs
+Compat.GetNumSpecGroups = GetNumTalentGroups
+Compat.GetNumUnspentTalents = GetUnspentTalentPoints
+Compat.GetActiveSpecGroup = GetActiveTalentGroup
+Compat.SetActiveSpecGroup = SetActiveTalentGroup
