@@ -45,14 +45,13 @@ function Compat.HexDecode(str)
 	return tconcat(t)
 end
 
+local escapeFrame = CreateFrame("Frame")
+escapeFrame.fs = escapeFrame:CreateFontString(nil, "ARTWORK", "ChatFontNormal")
+escapeFrame:Hide()
+
 function Compat.EscapeStr(str)
-	local res = ""
-	for i = 1, strlen(str) do
-		local n = str:sub(i, i)
-		res = res .. n
-		if n == "|" then
-			res = res .. "\124"
-		end
-	end
-	return (res ~= "") and res or str
+	escapeFrame.fs:SetText(str)
+	str = escapeFrame.fs:GetText()
+	escapeFrame.fs:SetText("")
+	return str
 end
