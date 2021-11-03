@@ -46,13 +46,15 @@ end
 do
 	local rmem, pmem, step, count
 
-	local function SelfIterator()
+	local function SelfIterator(excPets)
 		while step do
 			local unit, owner
 			if step == 1 then
 				unit, owner, step = "player", nil, 2
 			elseif step == 2 then
-				unit, owner, step = "playerpet", "player", nil
+				if not excPets then
+					unit, owner = "playerpet", "player"
+				end
 			end
 			if unitExists(unit) then
 				return unit, owner
@@ -60,16 +62,18 @@ do
 		end
 	end
 
-	local function PartyIterator()
+	local function PartyIterator(excPets)
 		while step do
 			local unit, owner
 			if step <= 2 then
-				unit, owner = SelfIterator()
+				unit, owner = SelfIterator(excPets)
 				step = step or 3
 			elseif step == 3 then
 				unit, owner, step = format("party%d", count), nil, 4
 			elseif step == 4 then
-				unit, owner = format("partypet%d", count), format("party%d", count)
+				if not excPets then
+					unit, owner = format("partypet%d", count), format("party%d", count)
+				end
 				count = count + 1
 				step = count <= pmem and 3 or nil
 			end
@@ -79,13 +83,15 @@ do
 		end
 	end
 
-	local function RaidIterator()
+	local function RaidIterator(excPets)
 		while step do
 			local unit, owner
 			if step == 1 then
 				unit, owner, step = format("raid%d", count), nil, 2
 			elseif step == 2 then
-				unit, owner = format("raidpet%d", count), format("raid%d", count)
+				if not excPets then
+					unit, owner = format("raidpet%d", count), format("raid%d", count)
+				end
 				count = count + 1
 				step = count <= rmem and 1 or nil
 			end
@@ -95,23 +101,23 @@ do
 		end
 	end
 
-	function Compat.UnitIterator()
+	function Compat.UnitIterator(excPets)
 		rmem, step = GetNumRaidMembers(), 1
 		if rmem == 0 then
 			pmem = GetNumPartyMembers()
 			if pmem == 0 then
-				return SelfIterator, false
+				return SelfIterator, excPets
 			end
 			count = 1
-			return PartyIterator, false
+			return PartyIterator, excPets
 		end
 		count = 1
-		return RaidIterator, true
+		return RaidIterator, excPets
 	end
 end
 
-function Compat.IsGroupDead()
-	for unit, owner in Compat.UnitIterator() do
+function Compat.IsGroupDead(incPets)
+	for unit in Compat.UnitIterator(not incPets) do
 		if not UnitIsDeadOrGhost(unit) then
 			return false
 		end
@@ -119,8 +125,8 @@ function Compat.IsGroupDead()
 	return true
 end
 
-function Compat.IsGroupInCombat()
-	for unit in Compat.UnitIterator() do
+function Compat.IsGroupInCombat(incPets)
+	for unit in Compat.UnitIterator(not incPets) do
 		if UnitAffectingCombat(unit) then
 			return true
 		end
