@@ -19,10 +19,10 @@ local WaitTable = {}
 
 local new, del
 do
-	C_Timer.__timers = C_Timer.__timers or {}
-	C_Timer.__afters = C_Timer.__afters or {}
-	local listT = C_Timer.__timers
-	local listA = C_Timer.__afters
+	C_Timer.recycledTimers = C_Timer.recycledTimers or {}
+	C_Timer.recycledDelays = C_Timer.recycledDelays or {}
+	local listT = C_Timer.recycledTimers
+	local listA = C_Timer.recycledDelays
 
 	function new(temp)
 		if temp then
@@ -36,9 +36,9 @@ do
 		return t
 	end
 
-	function del(t)
+	function del(t, temp)
 		if t then
-			local temp = t._temp
+			wipe(t)
 			t[true] = true
 			t[true] = nil
 			if temp then
@@ -58,7 +58,7 @@ local function WaitFunc(self, elapsed)
 		local ticker = WaitTable[i]
 
 		if ticker._cancelled then
-			del(tremove(WaitTable, i))
+			del(tremove(WaitTable, i), ticker._temp)
 			total = total - 1
 		elseif ticker._delay > elapsed then
 			ticker._delay = ticker._delay - elapsed
@@ -66,15 +66,15 @@ local function WaitFunc(self, elapsed)
 		else
 			ticker._callback(ticker)
 
-			if ticker._remainingIterations == -1 then
+			if ticker._iterations == -1 then
 				ticker._delay = ticker._duration
 				i = i + 1
-			elseif ticker._remainingIterations > 1 then
-				ticker._remainingIterations = ticker._remainingIterations - 1
+			elseif ticker._iterations > 1 then
+				ticker._iterations = ticker._iterations - 1
 				ticker._delay = ticker._duration
 				i = i + 1
-			elseif ticker._remainingIterations == 1 then
-				del(tremove(WaitTable, i))
+			elseif ticker._iterations == 1 then
+				del(tremove(WaitTable, i), ticker._temp)
 				total = total - 1
 			end
 		end
@@ -113,11 +113,11 @@ function C_Timer.After(duration, callback, ...)
 
 	local ticker = new(true)
 
-	ticker._remainingIterations = 1
+	ticker._iterations = 1
 	ticker._delay = max(0.01, duration)
 	ticker._callback = callback
-	ticker._cancelled = nil
 	ticker._temp = true
+	ticker._cancelled = nil -- just in case
 
 	AddDelayedCall(ticker)
 end
@@ -125,11 +125,12 @@ end
 local function CreateTicker(duration, callback, iterations, ...)
 	local ticker = new()
 
-	ticker._remainingIterations = iterations or -1
+	ticker._iterations = iterations or -1
 	ticker._delay = max(0.01, duration)
 	ticker._duration = ticker._delay
 	ticker._callback = callback
-	ticker._cancelled = nil
+	ticker._cancelled = nil -- just in case
+	ticker._temp = nil -- just in case
 
 	AddDelayedCall(ticker)
 	return ticker
@@ -161,9 +162,3 @@ function TickerPrototype:IsCancelled()
 end
 
 Compat.C_Timer = C_Timer
-
--- backwards compatibility
-Compat.After = C_Timer.After
-Compat.NewTicker = C_Timer.NewTicker
-Compat.NewTimer = C_Timer.NewTimer
-Compat.CancelTimer = C_Timer.CancelTimer
