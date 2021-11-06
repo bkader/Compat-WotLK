@@ -55,6 +55,7 @@ do
 				if not excPets then
 					unit, owner = "playerpet", "player"
 				end
+				step = nil
 			end
 			if unitExists(unit) then
 				return unit, owner
