@@ -19,20 +19,19 @@ local WaitTable = {}
 
 local new, del
 do
-	C_Timer.recycledTimers = C_Timer.recycledTimers or {}
-	C_Timer.recycledDelays = C_Timer.recycledDelays or {}
-	local listT = C_Timer.recycledTimers
-	local listA = C_Timer.recycledDelays
+	ns.afterPool = ns.afterPool or setmetatable({}, {__mode = "k"})
+	ns.timerPool = ns.timerPool or setmetatable({}, {__mode = "k"})
+	local afterPool = ns.afterPool
+	local timerPool = ns.timerPool
 
 	function new(temp)
 		if temp then
-			local t = next(listA) or {}
-			listA[t] = nil
+			local t = next(afterPool) or {}
+			afterPool[t] = nil
 			return t
 		end
-
-		local t = next(listT) or setmetatable({}, TickerMetatable)
-		listT[t] = nil
+		local t = next(timerPool) or setmetatable({}, TickerMetatable)
+		timerPool[t] = nil
 		return t
 	end
 
@@ -42,9 +41,9 @@ do
 			t[true] = true
 			t[true] = nil
 			if temp then
-				listA[t] = true
+				afterPool[t] = true
 			else
-				listT[t] = true
+				timerPool[t] = true
 			end
 		end
 	end
@@ -108,7 +107,7 @@ local function ValidateArguments(duration, callback, callFunc)
 	end
 end
 
-function C_Timer.After(duration, callback, ...)
+function C_Timer.After(duration, callback)
 	ValidateArguments(duration, callback, "After")
 
 	local ticker = new(true)
@@ -122,7 +121,7 @@ function C_Timer.After(duration, callback, ...)
 	AddDelayedCall(ticker)
 end
 
-local function CreateTicker(duration, callback, iterations, ...)
+local function CreateTicker(duration, callback, iterations)
 	local ticker = new()
 
 	ticker._iterations = iterations or -1
@@ -136,14 +135,14 @@ local function CreateTicker(duration, callback, iterations, ...)
 	return ticker
 end
 
-function C_Timer.NewTicker(duration, callback, iterations, ...)
+function C_Timer.NewTicker(duration, callback, iterations)
 	ValidateArguments(duration, callback, "NewTicker")
-	return CreateTicker(duration, callback, iterations, ...)
+	return CreateTicker(duration, callback, iterations)
 end
 
-function C_Timer.NewTimer(duration, callback, ...)
+function C_Timer.NewTimer(duration, callback)
 	ValidateArguments(duration, callback, "NewTimer")
-	return CreateTicker(duration, callback, 1, ...)
+	return CreateTicker(duration, callback, 1)
 end
 
 function C_Timer.CancelTimer(ticker)
