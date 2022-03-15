@@ -1,2 +1,2 @@
 local parent, ns = ...
-ns.Compat = {ver = 1, rev = 29, Private = {}}
+ns.Compat = {ver = 1, rev = 30, Private = {}}

@@ -6,6 +6,7 @@
 <!--@end-no-lib-strip@-->
 
 <Include file="libraries\LibGroupTalents-1.0\lib.xml"/>
+<Include file="libraries\LibBabble-TalentTree-3.0\lib.xml"/>
 
 <Script file="init.lua"/>
 <Script file="private.lua"/>
