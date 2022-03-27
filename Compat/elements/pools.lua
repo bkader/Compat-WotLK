@@ -167,6 +167,48 @@ local function CreateTexturePool(parent, layer, subLayer, textureTemplate, reset
 	return texturePool
 end
 
+-- Mix this into a FontString to have it animate towards its value
+local AnimatedNumericFontStringMixin = {}
+
+function AnimatedNumericFontStringMixin:SetAnimatedDurationTimeSec(animatedDurationTimeSec)
+	self.animatedDurationTimeSec = animatedDurationTimeSec
+end
+
+function AnimatedNumericFontStringMixin:GetAnimatedDurationTimeSec()
+	return self.animatedDurationTimeSec or 1.0
+end
+
+function AnimatedNumericFontStringMixin:SetValue(value)
+	self.currentAnimatedValue = value
+end
+
+function AnimatedNumericFontStringMixin:SetAnimatedValue(value)
+	self.targetAnimatedValue = value
+	self.currentAnimatedValue = self.currentAnimatedValue or self.targetAnimatedValue
+	self.initialAnimatedValueDelta = math.abs(self.targetAnimatedValue - self.currentAnimatedValue)
+end
+
+function AnimatedNumericFontStringMixin:SnapToTarget()
+	if self.targetAnimatedValue then
+		self:SetText(Compat.BreakUpLargeNumbers(Compat.Round(self.targetAnimatedValue)))
+		self.currentAnimatedValue = self.targetAnimatedValue
+		self.targetAnimatedValue = nil
+	end
+end
+
+function AnimatedNumericFontStringMixin:UpdateAnimatedValue(elapsed)
+	if self.targetAnimatedValue then
+		local change = self.initialAnimatedValueDelta * (elapsed / self:GetAnimatedDurationTimeSec())
+		if math.abs(self.targetAnimatedValue - self.currentAnimatedValue) <= change then
+			self:SnapToTarget()
+		else
+			local direction = self.targetAnimatedValue > self.currentAnimatedValue and 1 or -1
+			self.currentAnimatedValue = self.currentAnimatedValue + direction * change
+			self:SetText(Compat.BreakUpLargeNumbers(Compat.Round(self.currentAnimatedValue)))
+		end
+	end
+end
+
 Compat.Mixin = Mixin
 Compat.CreateFromMixins = CreateFromMixins
 Compat.CreateAndInitFromMixin = CreateAndInitFromMixin
@@ -180,3 +222,4 @@ Compat.TexturePoolMixin = TexturePoolMixin
 Compat.TexturePool_Hide = FramePool_Hide
 Compat.TexturePool_HideAndClearAnchors = FramePool_HideAndClearAnchors
 Compat.CreateTexturePool = CreateTexturePool
+Compat.AnimatedNumericFontStringMixin = AnimatedNumericFontStringMixin
