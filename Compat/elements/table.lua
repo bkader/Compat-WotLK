@@ -66,7 +66,12 @@ function Compat.tIndexOf(t, item)
 end
 
 function Compat.tContains(t, item)
-	return (Compat.tIndexOf(t, item) ~= nil)
+	for _, v in pairs(t) do
+		if item == v then
+			return true
+		end
+	end
+	return false
 end
 
 function Compat.tAppendAll(tbl, elems)
@@ -107,9 +112,21 @@ do
 		return {}
 	end
 
+	-- clears all items in a table.
+	function Table.clear(obj, func, ...)
+		if obj and func then
+			for k in pairs(obj) do
+				obj[k] = func(obj[k], ...)
+			end
+		elseif obj then
+			wipe(obj)
+		end
+		return obj
+	end
+
 	-- releases the already used lua table into the table pool
 	-- named "tag" or creates it right away.
-	function Table.free(tag, obj, noclear)
+	function Table.free(tag, obj, noclear, func, ...)
 		if not obj then return end
 
 		local pool = pools[tag]
@@ -122,9 +139,7 @@ do
 
 		if not noclear then
 			setmetatable(obj, nil)
-			for k, _ in pairs(obj) do
-				obj[k] = nil
-			end
+			obj = Table.clear(obj, func, ...)
 		end
 
 		do
@@ -154,13 +169,13 @@ end
 -- Table Pool for recycling tables
 -- creates a new table system that can be used to reuse tables
 -- it returns both "new" and "del" functions.
-function Compat.TablePool()
+function Compat.TablePool(mode)
 	local pool = {}
-	setmetatable(pool, {__mode = "k"})
+	setmetatable(pool, {__mode = mode or "k"})
 
 	-- attempts to retrieve a table from the cache
 	-- creates if if it doesn't exist.
-	local new = function()
+	local function new()
 		local t = next(pool) or {}
 		pool[t] = nil
 		return t
@@ -168,13 +183,17 @@ function Compat.TablePool()
 
 	-- it will wipe the provided table then cache it
 	-- to be reusable later.
-	local del = function(t)
+	local function del(t, recursive)
 		if type(t) == "table" then
-			for k, _ in pairs(t) do
+			setmetatable(t, nil)
+			for k, v in pairs(t) do
+				if recursive and type(v) == "table" then
+					del(v)
+				end
 				t[k] = nil
 			end
-			t[true] = true
-			t[true] = nil
+			t[""] = true
+			t[""] = nil
 			pool[t] = true
 		end
 		return nil
